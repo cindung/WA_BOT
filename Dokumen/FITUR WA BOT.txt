@@ -1,0 +1,117 @@
+===============================
+   RINGKASAN FITUR WABOT 2025
+===============================
+
+1. PRIVATE CHAT ONLY
+   - Bot hanya merespons chat pribadi ke nomor WA bot.
+   - Grup, komunitas, channel, dan status (stories) diabaikan 100%.
+   - Bisa diatur melalui .env:
+     PRIVATE_CHAT_ONLY=true
+
+2. EXCLUDED NUMBERS
+   - Nomor tertentu bisa dikecualikan agar bot tidak membalas.
+   - Berguna untuk nomor pribadi, admin, atau staff agar tidak terganggu.
+   - Format di .env:
+     EXCLUDED_NUMBERS=6281234567890,6289876543210
+
+3. CATALOG / PRICELIST AUTO-REPLY + COOLDOWN (Anti-Spam)
+   - Buyer yang chat pertama kali akan otomatis menerima CATALOG.
+   - Cooldown per nomor: default 24 jam.
+   - Bisa diatur di .env:
+     CATALOG_COOLDOWN_HOURS=24
+
+4. PERINTAH KHUSUS (tanpa cooldown)
+   - ORDER → Menampilkan catalog/pricelist terbaru.
+   - MENU → Sama seperti ORDER.
+   - CATALOG → Tampilkan catalog.
+   - Selalu dikirim, meskipun masih dalam masa cooldown.
+
+5. QRIS / BAYAR SYSTEM
+   - Ketik: "qris" atau "bayar" → bot mengirim qris.png
+   - Caption otomatis: instruksi pembayaran.
+
+6. PRODUK FULL DINAMIS DARI .env
+   - Semua produk dapat diatur tanpa menyentuh coding:
+       • harga
+       • deskripsi
+       • kategori
+       • icon kategori
+       • alias/shortcut nama produk
+   - Format:
+       PRODUCT_<ID>_TEXT=""
+       PRODUCT_CATEGORY_<ID>=streaming
+       PRODUCT_ALIAS_<ID>=alias1,alias2
+
+7. ICON KATEGORI OTOMATIS
+   - Produk akan tampil dengan icon sesuai kategori, contoh:
+       streaming → 📺
+       musik     → ♫
+       editing   → 🎬
+       tools     → 🛠️
+   - Bisa diubah di .env.
+
+8. TYPO SUGGESTION / ANTI SALAH KETIK
+   - Kalau buyer mengetik "netfli" atau "spoty", bot memberi saran:
+     "Maksud kak *NETFLIX*?"
+   - Menggunakan Levenshtein similarity akurat.
+
+9. ANTI-BANNED THROTTLING (pengiriman pesan aman)
+   - Pesan keluar tidak dikirim sekaligus.
+   - Bot mengirim satu per satu dengan jeda acak (delay).
+   - Atur di .env:
+     RATE_LIMIT_ENABLED=true
+     RATE_MIN_MS=800
+     RATE_MAX_MS=1500
+
+10. AUTO RECONNECT SUPER STABIL
+   - Jika koneksi WA putus, bot mencoba tersambung ulang otomatis.
+   - Jika logout / session diganti → bot memberi instruksi:
+       • hapus folder auth_info_baileys
+       • scan QR ulang
+
+11. BUYER DATABASE (buyers.json)
+   - Setiap buyer baru otomatis tercatat:
+       • nomor
+       • nama WhatsApp
+       • tanggal pertama chat
+       • terakhir interaksi
+       • jumlah interaksi
+       • produk yang pernah ditanyakan
+   - Tidak perlu database server apa pun.
+
+12. ERROR LOGGING (logs/error.log)
+   - Semua error dicatat aman ke dalam file:
+       logs/error.log
+   - Memudahkan debugging saat bot bermasalah.
+
+13. SAFETY MODE + FILTERING
+   - Bot tidak akan merespons:
+       • metadata sistem WhatsApp
+       • pesan status/story
+       • pesan dari grup
+   - Bot fokus 100% ke komunikasi dengan buyer.
+
+14. QR SCAN LOGIN
+   - Jika mengganti nomor WhatsApp:
+       • hapus folder auth_info_baileys
+       • jalankan bot → QR muncul → scan
+
+15. FULL EDITABLE TANPA CODING
+   - Semua konten:
+       • daftar produk
+       • alias
+       • harga
+       • icon kategori
+       • isi catalog
+       • cooldown
+       • rate limit
+       • nomor yang dikecualikan
+     dapat diedit langsung di file .env
+
+===============================
+   BOT ANDA SIAP DIPAKAI BISNIS
+===============================
+Fleksibel, aman, tidak spam, anti salah ketik, dan mudah diedit.
+Jika Anda ingin menambah fitur seperti auto-save kontak, 
+laporan harian/mingguan, atau dashboard web,
+khususkan perintahnya dan saya siap buatkan.
