@@ -57,3 +57,13 @@ device-list-*.json
 # Temporary files
 *.tmp
 *.temp
+
+# Runtime data files (sensitive)
+cooldown.json
+runtime_exclude.json
+qris_catalog_saved.json
+command_cooldown.json
+product_cooldown.json
+
+# QRIS image (contains payment info)
+qris.png
