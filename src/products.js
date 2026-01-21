@@ -4,7 +4,9 @@
 
 const { PRODUCT_KEYS } = require("./config");
 const { DEFAULTS } = require("./constants");
-const { dbgLine } = require("./utils");
+
+// Boot info storage (to be printed later by wabot.js)
+let bootInfo = { productCount: 0, aliasCount: 0, productList: [] };
 
 let products = {};
 let productRegex = null;
@@ -16,7 +18,6 @@ function buildProducts() {
     const map = {};
 
     if (!PRODUCT_KEYS.length) {
-        dbgLine("BOOT", "PRODUCT_KEYS kosong / tidak kebaca dari .env -> fitur produk tidak akan jalan.");
         return map;
     }
 
@@ -28,10 +29,6 @@ function buildProducts() {
 
         const desc = process.env[descKey] || "";
         if (!desc.trim()) {
-            dbgLine(
-                "BOOT",
-                `SKIP produk "${key}" karena ${descKey} kosong / tidak kebaca. (Biasanya masalah parsing .env multiline)`
-            );
             continue;
         }
 
@@ -89,10 +86,20 @@ function initProducts() {
     const keys = Object.keys(products);
     productRegex = buildProductRegex(keys);
 
-    // Log summary
+    // Store boot info for later display
     const uniqueMain = Array.from(new Set(keys.map((k) => products[k]?.mainKey).filter(Boolean)));
-    dbgLine("BOOT", `Loaded products: unique=${uniqueMain.length}, keys(total termasuk alias)=${keys.length}`);
-    if (uniqueMain.length) dbgLine("BOOT", `Product list: ${uniqueMain.join(", ")}`);
+    bootInfo = {
+        productCount: uniqueMain.length,
+        aliasCount: keys.length,
+        productList: uniqueMain
+    };
+}
+
+/**
+ * Get boot info for display
+ */
+function getProductBootInfo() {
+    return bootInfo;
 }
 
 /**
@@ -134,4 +141,5 @@ module.exports = {
     getProduct,
     getAllProducts,
     detectProductInText,
+    getProductBootInfo,
 };

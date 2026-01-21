@@ -5,8 +5,10 @@
 const fs = require("fs");
 const { PATHS } = require("./constants");
 const { QRIS_CATALOG_SAVED_PATH } = require("./config");
-const { dbgLine } = require("./utils");
 const { logError } = require("./logger");
+
+// Boot info storage
+let cacheBootInfo = { qrisImage: false, qrisTemplate: false };
 
 // Cached QRIS image buffer
 let qrisImageBuffer = null;
@@ -22,7 +24,7 @@ function initCache() {
     try {
         if (fs.existsSync(PATHS.QRIS_IMAGE)) {
             qrisImageBuffer = fs.readFileSync(PATHS.QRIS_IMAGE);
-            dbgLine("CACHE", "QRIS image cached successfully");
+            cacheBootInfo.qrisImage = true;
         }
     } catch (e) {
         logError("Failed to cache QRIS image", e);
@@ -61,7 +63,7 @@ function loadQrisTemplate() {
         const raw = fs.readFileSync(QRIS_CATALOG_SAVED_PATH, "utf8");
         qrisTemplate = JSON.parse(raw) || null;
         if (qrisTemplate) {
-            dbgLine("CACHE", "QRIS template cached successfully");
+            cacheBootInfo.qrisTemplate = true;
         }
         return qrisTemplate;
     } catch (e) {
@@ -99,6 +101,13 @@ function findProductMessageAny(messageObj) {
     return null;
 }
 
+/**
+ * Get cache boot info for display
+ */
+function getCacheBootInfo() {
+    return cacheBootInfo;
+}
+
 module.exports = {
     initCache,
     getQrisImageBuffer,
@@ -106,4 +115,5 @@ module.exports = {
     saveQrisTemplate,
     loadQrisTemplate,
     findProductMessageAny,
+    getCacheBootInfo,
 };

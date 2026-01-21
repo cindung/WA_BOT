@@ -15,6 +15,7 @@
 const originalConsoleLog = console.log;
 const FILTERED_PATTERNS = [
   'Closing session',
+  'Closing open session',
   'SessionEntry',
   '_chains',
   'registrationId',
@@ -26,10 +27,22 @@ const FILTERED_PATTERNS = [
   'chainKey',
   'baseKey',
   'rootKey',
+  'prekey bundle',
+  'chainType',
+  'messageKeys',
+  'remoteIdentityKey',
 ];
 
 console.log = function (...args) {
-  const message = args.map(a => typeof a === 'string' ? a : '').join(' ');
+  // Convert all args to string for pattern checking
+  const message = args.map(a => {
+    if (typeof a === 'string') return a;
+    if (typeof a === 'object') {
+      try { return JSON.stringify(a); } catch { return String(a); }
+    }
+    return String(a);
+  }).join(' ');
+
   const shouldFilter = FILTERED_PATTERNS.some(pattern => message.includes(pattern));
   if (!shouldFilter) {
     originalConsoleLog.apply(console, args);
@@ -50,9 +63,76 @@ const {
 const { PATHS } = require("./src/constants");
 const { RECONNECT_ENABLED, RECONNECT_BASE_DELAY_MS, RECONNECT_MAX_DELAY_MS } = require("./src/config");
 const { logError, setupErrorHandlers } = require("./src/logger");
-const { initCache } = require("./src/cache");
+const { initCache, getCacheBootInfo } = require("./src/cache");
 const { forceSaveCooldowns } = require("./src/cooldown");
 const { handleMessage } = require("./src/handlers/messageHandler");
+const { getProductBootInfo } = require("./src/products");
+
+// ===============================
+// BANNER & PROGRESS BAR
+// ===============================
+const BANNER = `
+╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║   ██╗    ██╗ █████╗     ██████╗  ██████╗ ████████╗        ║
+║   ██║    ██║██╔══██╗    ██╔══██╗██╔═══██╗╚══██╔══╝        ║
+║   ██║ █╗ ██║███████║    ██████╔╝██║   ██║   ██║           ║
+║   ██║███╗██║██╔══██║    ██╔══██╗██║   ██║   ██║           ║
+║   ╚███╔███╔╝██║  ██║    ██████╔╝╚██████╔╝   ██║           ║
+║    ╚══╝╚══╝ ╚═╝  ╚═╝    ╚═════╝  ╚═════╝    ╚═╝           ║
+║                                                           ║
+║              WhatsApp Auto Reply Bot v1.0                 ║
+║                     by: Achmad                            ║
+╚═══════════════════════════════════════════════════════════╝
+`;
+
+const GOODBYE_BANNER = `
+╔═══════════════════════════════════════════════════════════╗
+║                      👋 Goodbye!                          ║
+║              Bot stopped at ${new Date().toLocaleTimeString()}                      ║
+╚═══════════════════════════════════════════════════════════╝
+`;
+
+function printBanner() {
+  console.log(BANNER);
+}
+
+function progressBar(percent, message) {
+  const total = 20;
+  const filled = Math.round((percent / 100) * total);
+  const empty = total - filled;
+  const bar = '█'.repeat(filled) + '░'.repeat(empty);
+  console.log(`[${bar}] ${percent}% - ${message}`);
+}
+
+async function showStartupProgress() {
+  // Print boot info first
+  const productInfo = getProductBootInfo();
+  const cacheInfo = getCacheBootInfo();
+
+  console.log(`📦 Loaded ${productInfo.productCount} products (${productInfo.aliasCount} aliases)`);
+  console.log(`📷 QRIS image: ${cacheInfo.qrisImage ? 'cached ✓' : 'not found'}`);
+  console.log(`📑 QRIS template: ${cacheInfo.qrisTemplate ? 'cached ✓' : 'not found'}`);
+
+  console.log('\n⏳ Memulai bot...\n');
+
+  progressBar(20, 'Loading config...');
+  await new Promise(r => setTimeout(r, 300));
+
+  progressBar(40, 'Loading cache...');
+  await new Promise(r => setTimeout(r, 300));
+
+  progressBar(60, 'Loading cooldowns...');
+  await new Promise(r => setTimeout(r, 300));
+
+  progressBar(80, 'Connecting to WhatsApp...');
+}
+
+function printReadyMessage() {
+  console.log('\n═══════════════════════════════════════════════════════════');
+  console.log('📊 Bot siap menerima pesan...');
+  console.log('═══════════════════════════════════════════════════════════\n');
+}
 
 // Setup global error handlers
 setupErrorHandlers();
@@ -68,9 +148,11 @@ let currentSock = null;
 // ===============================
 async function gracefulShutdown(signal) {
   console.log(`\n⚠️ ${signal} received. Shutting down gracefully...`);
+  progressBar(50, 'Saving cooldowns...');
 
   // Force save cooldowns
   forceSaveCooldowns();
+  progressBar(100, 'Done!');
   console.log("✅ Cooldowns saved.");
 
   // Close socket if connected
@@ -83,7 +165,14 @@ async function gracefulShutdown(signal) {
     }
   }
 
-  console.log("👋 Goodbye!");
+  // Print goodbye banner
+  const goodbyeBanner = `
+╔═══════════════════════════════════════════════════════════╗
+║                      👋 Goodbye!                          ║
+║              Bot stopped at ${new Date().toLocaleTimeString()}                      ║
+╚═══════════════════════════════════════════════════════════╝
+`;
+  console.log(goodbyeBanner);
   process.exit(0);
 }
 
@@ -94,6 +183,13 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 // START BOT
 // ===============================
 async function startBot() {
+  // Show banner and progress on first run only
+  if (!startBot._started) {
+    printBanner();
+    await showStartupProgress();
+    startBot._started = true;
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(PATHS.AUTH_INFO);
   const { version } = await fetchLatestBaileysVersion();
 
@@ -118,7 +214,11 @@ async function startBot() {
       console.log("\nBuka WhatsApp → Perangkat Tertaut → Tautkan Perangkat\n");
     }
 
-    if (connection === "open") console.log("✅ Bot WhatsApp terhubung!");
+    if (connection === "open") {
+      progressBar(100, 'Connected!');
+      console.log("\n✅ Bot WhatsApp terhubung!");
+      printReadyMessage();
+    }
 
     if (connection === "close") {
       if (code === DisconnectReason.loggedOut || code === DisconnectReason.connectionReplaced) {
