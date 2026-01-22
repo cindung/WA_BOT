@@ -85,7 +85,6 @@ function getQrisTemplate() {
 function saveQrisTemplate(messageObj) {
     fs.writeFileSync(QRIS_CATALOG_SAVED_PATH, JSON.stringify(messageObj, null, 2), "utf8");
     qrisTemplate = messageObj;
-    dbgLine("QRIS", `Template tersimpan -> ${QRIS_CATALOG_SAVED_PATH}`);
 }
 
 /**
